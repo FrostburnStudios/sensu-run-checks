@@ -27,7 +27,7 @@ class String
 end
 
 def usage
-  puts "Usage: $0 [CHECK_NAME]"
+  puts "Usage: $0 [CHECK_NAME|FILE ARG1 ARG2...]"
   puts "Runs all checks, or specified check, and prints the output with pretty colors."
   puts "e.g. $0 check_load"
   exit 1
@@ -36,14 +36,20 @@ end
 def run(args)
   warn("Using sensu's embedded ruby") if use_embedded_ruby?
 
-  only_check =
+  check =
     if args.empty?
       nil
     else
       args[0].strip
     end
-  Dir.glob("/etc/sensu/conf.d/**/*.json") do |f|
-    check(f, only_check)
+
+  if !check.nil? && File.exists?(check)
+    name = File.basename(check, File.extname(check))
+    cmd(name, args.join(' '))
+  else
+    Dir.glob("/etc/sensu/conf.d/**/*.json") do |f|
+      check(f, check)
+    end
   end
 end
 
@@ -52,7 +58,9 @@ def check(path, only_check=nil)
   if check.has_key?('checks')
     check['checks'].each do |name,c|
       if only_check.nil? || only_check == name
-        cmd(name, c)
+        unless c.has_key?('type') || c['type'] == 'check'
+          cmd(name, c['command'])
+        end
       end
     end
   else
@@ -61,21 +69,20 @@ def check(path, only_check=nil)
 end
 
 def cmd(name, check)
-  unless check.has_key?('type') || check['type'] == 'check'
-    info("Running #{name}...")
-    cmd = "#{ruby_env} #{check['command']}"
+  info("Running #{name}...")
 
-    info("  #{check['command']}")
-    output = `su -s /bin/bash -c "#{cmd}" sensu`.strip
+  cmd = "#{ruby_env} #{check}"
 
-    if $? != 0
-      fail("  #{output}")
-    else
-      success("  #{output}")
-    end
+  info("  #{check}")
+  output = `su -s /bin/bash -c "#{cmd}" sensu`.strip
 
-    info("Done")
+  if $? != 0
+    fail("  #{output}")
+  else
+    success("  #{output}")
   end
+
+  info("Done")
 end
 
 def ruby_env

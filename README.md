@@ -4,7 +4,7 @@ A ruby script to execute sensu checks as if sensu was running them and display t
 ## Examples
 Sadly you can't see the very helpful color highlighting in this preview. Trust me, it's gorgeous! Give it a whirl, it won't disappoint.
 
-### Run a specific check
+### Run a named check
 ```shell
 [ root@server (:) ~ :) ] ./sensu_checks.rb check_ntp
 No checks in /etc/sensu/conf.d/client.json... ignored
@@ -15,7 +15,16 @@ Done
 No checks in /etc/sensu/conf.d/common.json... ignored
 ```
 
-### Running all checks
+### Run a check script
+```shell
+[ root@server (:) ~ :) ] ./sensu_checks.rb /etc/sensu/plugins/system/check-ntp.rb -w 100 -c 500
+Running check_ntp...
+  /etc/sensu/plugins/system/check-ntp.rb -w 100 -c 500
+  CheckNTP OK
+Done
+```
+
+### Run all checks
 ```shell
 [ root@server (:) ~ :) ] ./sensu_checks.rb
 Running check_cpu...
